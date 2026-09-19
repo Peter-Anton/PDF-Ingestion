@@ -1,0 +1,12 @@
+fastapi[standard]
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+alembic
+pgvector
+pypdf
+langchain-text-splitters
+sentence-transformers
+pydantic-settings
+python-multipart
+psycopg2
