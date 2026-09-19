@@ -14,6 +14,3 @@ class ResponseSignal(str, Enum):
     VECTOR_DB_SEARCH_SUCCESS = "vector db search success"
     INSERT_INTO_VECTOR_DB_FAILED = "insert into vector db failed"
     INSERT_INTO_VECTOR_DB_SUCCESS = "insert into vector db success"
-    GET_COLLECTION_INFO_SUCCESS = "get collection info success"
-    RAG_ANSWER_FAILED = "RAG answer failed"
-    RAG_ANSWER_SUCCESS = "RAG answer success"

@@ -9,7 +9,7 @@ from services.embedding.EmbeddingProviderFactory import EmbeddingProviderFactory
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    postgres_conn=f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+    postgres_conn=f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DATABASE}"
     app.state.db_engine = create_async_engine(postgres_conn, echo=True)
     app.state.db_client = sessionmaker(app.state.db_engine, expire_on_commit=False, class_=AsyncSession)
     app.state.embedding_client=EmbeddingProviderFactory.create(provider=settings.EMBEDDING_BACKEND)
