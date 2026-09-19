@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from services.hashing import compute_sha256
 from services.pdf_extractor import extract_text
 from services.chunker import chunk_text
-from services.embedding.EmbeddingInterface import EmbeddingProvider
+from services.embedding.EmbeddingInterface import EmbeddingInterface
 from repositories.document_repository import DocumentRepository
 from repositories.chunk_repository import ChunkRepository
 from exceptions import PDFExtractionError, EmbeddingError
@@ -20,7 +20,7 @@ async def ingest_single_file(
     filename: str,
     file_bytes: bytes,
     session: AsyncSession,
-    embedding_provider: EmbeddingProvider,
+    embedding_provider: EmbeddingInterface,
 ) -> dict:
     settings = get_settings()
     doc_repo = DocumentRepository(session)
@@ -128,7 +128,7 @@ async def ingest_single_file(
 async def ingest_files(
     files: list[tuple[str, bytes]],
     session: AsyncSession,
-    embedding_provider: EmbeddingProvider,
+    embedding_provider: EmbeddingInterface,
 ) -> dict:
     results = []
     for filename, file_bytes in files:

@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from routes import base, data
+from routes import base, ingest, search
 from helpers.config import get_settings
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from services.embedding import EmbeddingProviderFactory
+from services.embedding.EmbeddingProviderFactory import EmbeddingProviderFactory
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -17,10 +17,10 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        app.state.db_engine.dispose()
-        app.state.vector_db_client.disconnect()
+        await app.state.db_engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(base.base_router)
-app.include_router(data.data_router)
+app.include_router(ingest.ingest_router)
+app.include_router(search.search_router)

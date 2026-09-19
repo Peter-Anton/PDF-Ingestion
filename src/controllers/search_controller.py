@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.embedding.base import EmbeddingProvider
+from services.embedding.EmbeddingInterface import EmbeddingInterface
 from services.vector_search import search_similar
 from exceptions import EmptyQueryError, EmbeddingError
 from helpers.config import get_settings
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 async def search(
     query: str,
     session: AsyncSession,
-    embedding_provider: EmbeddingProvider,
+    embedding_provider: EmbeddingInterface,
 ) -> list[dict]:
     settings = get_settings()
 

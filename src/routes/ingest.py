@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from controllers.ingest_controller import ingest_files
-from schemas.ingest import IngestResponse
+from routes.schemas.ingest import IngestResponse
 from helpers.config import get_settings
 
 logger = logging.getLogger(__name__)

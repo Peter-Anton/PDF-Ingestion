@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import get_db
 from controllers.search_controller import search
-from schemas.search import SearchRequest, SearchResponse, SearchResult
+from routes.schemas.search import SearchRequest, SearchResponse, SearchResult
 from exceptions import EmptyQueryError
 
 logger = logging.getLogger(__name__)
