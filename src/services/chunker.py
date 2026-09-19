@@ -1,10 +1,3 @@
-"""
-Text chunking service.
-
-Uses langchain-text-splitters' RecursiveCharacterTextSplitter
-for intelligent text chunking with configurable size and overlap.
-"""
-
 import logging
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 

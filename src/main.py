@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from time import perf_counter
+import logging
 from routes import base, ingest, search
 from helpers.config import get_settings
 from contextlib import asynccontextmanager
@@ -6,6 +8,28 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from services.embedding.EmbeddingProviderFactory import EmbeddingProviderFactory
+
+logger = logging.getLogger("uvicorn.error")
+
+
+async def request_metrics(request, call_next):
+    started_at = perf_counter()
+    response = None
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        elapsed_ms = (perf_counter() - started_at) * 1000
+        status_code = response.status_code if response is not None else 500
+        logger.info(
+            "request method=%s path=%s status=%s latency_ms=%.2f",
+            request.method,
+            request.url.path,
+            status_code,
+            elapsed_ms,
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -20,6 +44,7 @@ async def lifespan(app: FastAPI):
         await app.state.db_engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
+app.middleware("http")(request_metrics)
 
 app.include_router(base.base_router)
 app.include_router(ingest.ingest_router)

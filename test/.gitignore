@@ -204,7 +204,6 @@ cython_debug/
 # Marimo
 marimo/_static/
 explained.md
-explain.md
 marimo/_lsp/
 __marimo__/
 

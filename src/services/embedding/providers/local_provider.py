@@ -38,18 +38,28 @@ class LocalProvider(EmbeddingInterface):
             return text[:self.default_input_max_characters].strip()
     
     def embed_text(self, text: str, document_type: str = None):
+        return self.embed_texts([text], document_type)[0]
+
+    def embed_texts(self, texts: list[str], document_type: str = None):
         if not self.client:
             raise RuntimeError("Embedding model has not been initialized")
 
         try:
-            embedding = next(self.client.embed([self.process_text(text)]))
+            embeddings = list(
+                self.client.embed([self.process_text(text) for text in texts])
+            )
         except Exception:
             self.logger.exception("Error while embedding text with model %s", self.embedding_model_id)
             raise
 
-        if embedding is None or len(embedding) != self.embed_size:
-            raise RuntimeError(
-                f"Embedding model returned {len(embedding)} values; expected {self.embed_size}"
-            )
+        if len(embeddings) != len(texts):
+            raise RuntimeError(f"Embedding model returned {len(embeddings)} vectors; expected {len(texts)}")
 
-        return embedding.tolist()
+        vectors = []
+        for embedding in embeddings:
+            if embedding is None or len(embedding) != self.embed_size:
+                raise RuntimeError(
+                    f"Embedding model returned {len(embedding)} values; expected {self.embed_size}"
+                )
+            vectors.append(embedding.tolist())
+        return vectors

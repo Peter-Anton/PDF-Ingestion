@@ -13,5 +13,8 @@ class EmbeddingInterface(ABC):
     @abstractmethod
     def embed_text(self,text:str,document_type:str):
         pass
+    @abstractmethod
+    def embed_texts(self, texts: list[str], document_type: str):
+        pass
 
 

@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int 
     TOP_K: int
     ALLOWED_DIRECTORY: str 
+    EMBEDDING_CONCURRENCY: int = 2
 
 
 def get_settings() -> Settings:

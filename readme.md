@@ -236,6 +236,40 @@ The test suite covers:
 - Semantic search queries
 - Edge cases (invalid files, empty queries, concurrent uploads, duplicates)
 
+## Ragas And Performance Evaluation
+
+Request logs include the HTTP method, path, status, and `latency_ms`. For
+retrieval-quality evaluation and throughput measurements, install the optional
+evaluation dependencies:
+
+```bash
+pip install -r requirements-evaluation.txt
+python evaluation/ragas_benchmark.py \
+  --dataset evaluation/sample.jsonl \
+  --concurrency 4 \
+  --output evaluation/report.json
+```
+
+The benchmark sends concurrent search requests and reports wall-clock
+throughput, minimum/mean/median/p95/maximum latency, each response, and Ragas
+context precision and context recall. It prints the report and writes it to
+`evaluation/report.json`.
+
+For performance-only measurements without installing Ragas metrics:
+
+```bash
+python evaluation/ragas_benchmark.py \
+  --dataset evaluation/sample.jsonl \
+  --concurrency 4 \
+  --skip-ragas
+```
+
+Ragas evaluates retrieval quality; it does not replace the request middleware
+or measure production throughput. Replace the sample `reference_contexts` and
+`reference` fields with ground-truth data for meaningful evaluation. Metrics
+that require an external judge LLM are intentionally not enabled, so this
+project remains fully local and containerized.
+
 ---
 
 ## Design Decisions
