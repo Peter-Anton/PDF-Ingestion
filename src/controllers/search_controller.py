@@ -26,8 +26,11 @@ async def search(
     # 3-Search
     results = await search_similar(
         session=session,
+        query=query.strip(),
         query_embedding=query_embedding,
         top_k=settings.TOP_K,
+        rrf_k=settings.HYBRID_RRF_K,
+        min_relevance_score=settings.MIN_RELEVANCE_SCORE,
     )
 
     logger.info(f"Search for '{query[:50]}...' returned {len(results)} results")

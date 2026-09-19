@@ -1,6 +1,6 @@
 # PDF Ingestion & Semantic Search API
 
-A containerised microservice that ingests PDF documents, generates vector embeddings with FastEmbed, stores them in PostgreSQL with [pgvector](https://github.com/pgvector/pgvector), and exposes a semantic search endpoint.
+A containerised microservice that ingests PDF documents, generates vector embeddings with FastEmbed, stores them in PostgreSQL with [pgvector](https://github.com/pgvector/pgvector), and exposes a hybrid semantic and keyword search endpoint.
 
 ---
 
@@ -24,7 +24,7 @@ A containerised microservice that ingests PDF documents, generates vector embedd
 |------------|--------------------------------------------------|
 | **FastAPI** | REST API — ingest PDFs, semantic search          |
 | **FastEmbed** | In-process `BAAI/bge-small-en-v1.5` model (384-dim) |
-| **PostgreSQL + pgvector** | Document & chunk storage with cosine similarity search |
+| **PostgreSQL + pgvector** | Document & chunk storage with hybrid vector and full-text search |
 | **Alembic** | Database schema migrations                       |
 
 ---
@@ -235,6 +235,20 @@ The test suite covers:
 - Single and multiple PDF ingestion
 - Semantic search queries
 - Edge cases (invalid files, empty queries, concurrent uploads, duplicates)
+
+## Hybrid Search
+
+Search combines two PostgreSQL retrieval signals:
+
+- pgvector cosine-distance ranking for semantic similarity.
+- PostgreSQL English full-text ranking for exact terms and phrases.
+
+The two candidate rankings are combined with Reciprocal Rank Fusion. The
+`HYBRID_RRF_K` setting controls the fusion constant and defaults to `60`.
+Hybrid retrieval improves ranking, but it does not by itself prove that a
+question is in scope. A production policy should also apply a calibrated
+minimum relevance threshold and return an explicit no-relevant-document result
+when the evidence is weak.
 
 ## Ragas And Performance Evaluation
 
