@@ -11,7 +11,7 @@ pypdf
 PyMuPDF
 langchain-text-splitters
 
-ollama
+fastembed
 
 pydantic-settings
 python-multipart

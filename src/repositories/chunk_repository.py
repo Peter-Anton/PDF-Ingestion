@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.db_scheme.pgvector.schemes.chunk import Chunk
+from models.db_scheme.pgvector.schemes.documents import Document
 
 
 class ChunkRepository:
@@ -26,15 +27,16 @@ class ChunkRepository:
     ) -> list[dict]:
         distance = Chunk.embedding.cosine_distance(query_embedding)
         result = await self.session.execute(
-            select(Chunk, distance.label("score"))
+            select(Chunk, Document.filename, distance.label("distance"))
+            .join(Document, Chunk.document_id == Document.id)
             .order_by(distance)
             .limit(top_k)
         )
         return [
             {
-                "document": chunk.document_id,
-                "score": score,
+                "document": filename,
+                "score": round(1 - dist, 4),
                 "content": chunk.chunk_text,
             }
-            for chunk, score in result.all()
+            for chunk, filename, dist in result.all()
         ]

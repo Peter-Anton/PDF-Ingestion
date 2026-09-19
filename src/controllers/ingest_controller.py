@@ -83,7 +83,10 @@ async def ingest_single_file(
             }
         async with _SEMAPHORE:
             try:
-                embeddings = embedding_provider.embed(chunks)
+                embeddings = [
+                    embedding_provider.embed_text(chunk, "document")
+                    for chunk in chunks
+                ]
             except Exception as e:
                 await doc_repo.update_status(doc.id, "failed", error_message=f"Embedding failed: {e}")
                 await session.commit()

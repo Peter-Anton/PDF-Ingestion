@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libpq-dev && \
+    apt-get install -y --no-install-recommends gcc libpq-dev curl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY docker/requirements.txt requirements.txt
@@ -14,8 +14,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY src/ .
 RUN mkdir -p /data
 EXPOSE 8000
-HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=10 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')" || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Apply the DB schema, download/cache the small embedding model during app startup,
+# then start the server.
+CMD ["sh", "-c", "cd /app/models/db_scheme/pgvector && alembic upgrade head && cd /app && exec uvicorn main:app --host 0.0.0.0 --port 8000"]

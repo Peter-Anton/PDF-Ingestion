@@ -11,7 +11,7 @@ servers:
     description: Local server
 
 paths:
-  /ingest/:
+  /api/v1/ingest/:
     post:
       summary: Ingest PDFs into the system
       description: |
@@ -78,7 +78,7 @@ paths:
                     type: string
                     example: "Failed to process uploaded file."
 
-  /search/:
+  /api/v1/search/:
     post:
       summary: Perform semantic search
       description: Search ingested PDFs for semantically similar content.

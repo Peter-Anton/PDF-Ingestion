@@ -1,7 +1,6 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: pdf_postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -10,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ../init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -23,7 +22,6 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: pdf_app
     ports:
       - "8000:8000"
     env_file:
@@ -33,7 +31,9 @@ services:
         condition: service_healthy
     volumes:
       - ./data:/data
+      - fastembed_models:/models
     restart: unless-stopped
 
 volumes:
   pgdata:
+  fastembed_models:

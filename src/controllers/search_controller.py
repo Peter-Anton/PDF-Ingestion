@@ -18,7 +18,7 @@ async def search(
 
     # 2. Embed query
     try:
-        query_embedding = embedding_provider.embed_query(query.strip())
+        query_embedding = embedding_provider.embed_text(query.strip(), "query")
     except Exception as e:
         logger.error(f"Failed to embed query: {e}")
         raise EmbeddingError(f"Failed to embed query: {e}")

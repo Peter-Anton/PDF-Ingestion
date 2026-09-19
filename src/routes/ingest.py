@@ -13,9 +13,7 @@ from helpers.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-ingest_router = APIRouter(
-    prefix="/api/v1",
-    tags=["api_v1", "Ingest"])
+ingest_router = APIRouter(tags=["Ingest"])
 
 
 @ingest_router.post("/ingest/", response_model=IngestResponse)
@@ -25,7 +23,7 @@ async def ingest(
     db: AsyncSession = Depends(get_db),
 ):
     settings = get_settings()
-    embedding_provider = request.app.state.EMBEDDING_MODEL_ID
+    embedding_provider = request.app.state.embedding_client
     files_to_process: list[tuple[str, bytes]] = []
     if input and isinstance(input, list) and len(input) > 0:
         first = input[0]
