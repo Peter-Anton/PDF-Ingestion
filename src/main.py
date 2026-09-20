@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from services.embedding.EmbeddingProviderFactory import EmbeddingProviderFactory
+from services.ingestion_worker import IngestionWorker
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -38,9 +39,17 @@ async def lifespan(app: FastAPI):
     app.state.db_client = sessionmaker(app.state.db_engine, expire_on_commit=False, class_=AsyncSession)
     app.state.embedding_client=EmbeddingProviderFactory.create(provider=settings.EMBEDDING_BACKEND)
     app.state.embedding_client.set_embedding_model(settings.EMBEDDING_MODEL_ID, settings.EMBEDDING_MODEL_SIZE)
+    app.state.ingestion_worker = IngestionWorker(
+        app.state.db_client,
+        app.state.embedding_client,
+        settings.INGESTION_WORKERS,
+        settings.INGESTION_QUEUE_SIZE,
+    )
+    await app.state.ingestion_worker.start()
     try:
         yield
     finally:
+        await app.state.ingestion_worker.stop()
         await app.state.db_engine.dispose()
 
 app = FastAPI(lifespan=lifespan)

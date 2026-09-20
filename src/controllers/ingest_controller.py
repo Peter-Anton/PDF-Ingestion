@@ -14,14 +14,8 @@ from exceptions import PDFExtractionError, EmbeddingError
 from helpers.config import get_settings
 
 logger = logging.getLogger(__name__)
-_EMBEDDING_SEMAPHORE = None
 
 
-def _get_embedding_semaphore(concurrency: int) -> asyncio.Semaphore:
-    global _EMBEDDING_SEMAPHORE
-    if _EMBEDDING_SEMAPHORE is None:
-        _EMBEDDING_SEMAPHORE = asyncio.Semaphore(max(1, concurrency))
-    return _EMBEDDING_SEMAPHORE
 async def ingest_single_file(
     filename: str,
     file_bytes: bytes,
@@ -87,23 +81,22 @@ async def ingest_single_file(
                 "error": "No text chunks produced.",
                 "duplicate": False,
             }
-        async with _get_embedding_semaphore(settings.EMBEDDING_CONCURRENCY):
-            try:
-                embeddings = await asyncio.to_thread(
-                    embedding_provider.embed_texts,
-                    chunks,
-                    "document",
-                )
-            except Exception as e:
-                await doc_repo.update_status(doc.id, "failed", error_message=f"Embedding failed: {e}")
-                await session.commit()
-                logger.error(f"Embedding failed for {filename}: {e}")
-                return {
-                    "success": False,
-                    "filename": filename,
-                    "error": f"Embedding failed: {e}",
-                    "duplicate": False,
-                }
+        try:
+            embeddings = await asyncio.to_thread(
+                embedding_provider.embed_texts,
+                chunks,
+                "document",
+            )
+        except Exception as e:
+            await doc_repo.update_status(doc.id, "failed", error_message=f"Embedding failed: {e}")
+            await session.commit()
+            logger.error(f"Embedding failed for {filename}: {e}")
+            return {
+                "success": False,
+                "filename": filename,
+                "error": f"Embedding failed: {e}",
+                "duplicate": False,
+            }
         chunk_data = [
             {
                 "content": chunks[i],

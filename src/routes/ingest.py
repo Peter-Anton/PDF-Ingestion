@@ -1,12 +1,9 @@
 import os
 import logging
 
-from fastapi import APIRouter, Request, UploadFile, File, Depends
+from fastapi import APIRouter, Request, UploadFile, File
 from fastapi.responses import JSONResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import get_db
-from controllers.ingest_controller import ingest_files
 from routes.schemas.ingest import IngestResponse
 from helpers.config import get_settings
 
@@ -19,10 +16,8 @@ ingest_router = APIRouter(tags=["Ingest"])
 async def ingest(
     request: Request,
     input: list[UploadFile] = File(None),
-    db: AsyncSession = Depends(get_db),
 ):
     settings = get_settings()
-    embedding_provider = request.app.state.embedding_client
     files_to_process: list[tuple[str, bytes]] = []
     if input and isinstance(input, list) and len(input) > 0:
         first = input[0]
@@ -43,7 +38,7 @@ async def ingest(
                 )
         else:
             return await _handle_directory_input(
-                first, db, embedding_provider, settings
+                first, request.app.state.ingestion_worker, settings
             )
     else:
         form = await request.form()
@@ -53,7 +48,7 @@ async def ingest(
             # Directory path string
             dir_path = input_value.strip()
             return await _process_directory(
-                dir_path, db, embedding_provider, settings
+                dir_path, request.app.state.ingestion_worker, settings
             )
 
         return JSONResponse(
@@ -61,22 +56,16 @@ async def ingest(
             content={"error": "No input provided. Send PDF file(s) or a directory path."},
         )
 
-    # Process files
-    result = await ingest_files(files_to_process, db, embedding_provider)
-
-    if not result["success"]:
-        return JSONResponse(
-            status_code=400,
-            content={"error": result["message"]},
-        )
+    for filename, file_bytes in files_to_process:
+        await request.app.state.ingestion_worker.submit(filename, file_bytes)
 
     return IngestResponse(
-        message=result["message"],
-        files=result["files"],
+        message=f"Queued {len(files_to_process)} PDF document(s) for ingestion.",
+        files=[filename for filename, _ in files_to_process],
     )
 
 
-async def _handle_directory_input(upload_file, db, embedding_provider, settings):
+async def _handle_directory_input(upload_file, ingestion_worker, settings):
     """Handle when the input is a directory path sent as a form string."""
     try:
         content = await upload_file.read()
@@ -87,13 +76,12 @@ async def _handle_directory_input(upload_file, db, embedding_provider, settings)
             content={"error": "Invalid directory path."},
         )
 
-    return await _process_directory(dir_path, db, embedding_provider, settings)
+    return await _process_directory(dir_path, ingestion_worker, settings)
 
 
 async def _process_directory(
     dir_path: str,
-    db: AsyncSession,
-    embedding_provider,
+    ingestion_worker,
     settings,
 ):
     """
@@ -133,15 +121,10 @@ async def _process_directory(
             content={"error": "No PDF files found in the specified directory."},
         )
 
-    result = await ingest_files(files_to_process, db, embedding_provider)
-
-    if not result["success"]:
-        return JSONResponse(
-            status_code=400,
-            content={"error": result["message"]},
-        )
+    for filename, file_bytes in files_to_process:
+        await ingestion_worker.submit(filename, file_bytes)
 
     return IngestResponse(
-        message=result["message"],
-        files=result["files"],
+        message=f"Queued {len(files_to_process)} PDF document(s) for ingestion.",
+        files=[filename for filename, _ in files_to_process],
     )

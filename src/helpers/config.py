@@ -16,9 +16,10 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL_SIZE: int 
     CHUNK_SIZE: int 
     CHUNK_OVERLAP: int 
+    INGESTION_WORKERS: int = 1
+    INGESTION_QUEUE_SIZE: int = 100
     TOP_K: int
     ALLOWED_DIRECTORY: str 
-    EMBEDDING_CONCURRENCY: int 
     HYBRID_RRF_K: int 
     MIN_RELEVANCE_SCORE: float 
 
