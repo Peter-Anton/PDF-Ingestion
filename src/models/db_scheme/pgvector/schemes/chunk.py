@@ -1,5 +1,3 @@
-from pydantic import BaseModel
-
 from .base import SQLAlchemyBase
 import uuid
 from datetime import datetime, timezone
@@ -40,6 +38,3 @@ class Chunk(SQLAlchemyBase):
 
     def __repr__(self):
         return f"<Chunk(id={self.id}, document_id={self.document_id}, index={self.chunk_index})>"
-class RetrivedDocument(BaseModel):
-    text: str
-    score: float

@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession

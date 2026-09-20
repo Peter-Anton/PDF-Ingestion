@@ -1,5 +1,4 @@
-from fastapi import APIRouter,FastAPI,Depends
-import os
+from fastapi import APIRouter, Depends
 from helpers.config import get_settings,Settings
 
 base_router=APIRouter(

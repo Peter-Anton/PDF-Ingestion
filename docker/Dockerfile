@@ -16,7 +16,4 @@ RUN mkdir -p /data
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=10 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')" || exit 1
-
-# Apply the DB schema, download/cache the small embedding model during app startup,
-# then start the server.
 CMD ["sh", "-c", "cd /app/models/db_scheme/pgvector && alembic upgrade head && cd /app && exec uvicorn main:app --host 0.0.0.0 --port 8000"]

@@ -12,13 +12,9 @@ class LocalProvider(EmbeddingInterface):
     """Local embedding provider using FastEmbed and an ONNX model."""
     def __init__(self,
                  default_input_max_characters: int=1000,
-                 default_output_max_characters: int=1000,
-                 temperature: float=0.1,
                  model_name: str="BAAI/bge-small-en-v1.5"
                  ):
             self.default_input_max_characters = default_input_max_characters
-            self.default_output_max_characters = default_output_max_characters
-            self.temperature = temperature
             self.embedding_model_id = None
             self.embed_size=None
             self.model_name = model_name

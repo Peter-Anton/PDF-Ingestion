@@ -18,9 +18,9 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int 
     TOP_K: int
     ALLOWED_DIRECTORY: str 
-    EMBEDDING_CONCURRENCY: int = 2
-    HYBRID_RRF_K: int = 60
-    MIN_RELEVANCE_SCORE: float = 0.55
+    EMBEDDING_CONCURRENCY: int 
+    HYBRID_RRF_K: int 
+    MIN_RELEVANCE_SCORE: float 
 
 
 def get_settings() -> Settings:
