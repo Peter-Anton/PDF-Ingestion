@@ -13,6 +13,7 @@ flowchart TD
     App[FastAPI app container]
     Routes[HTTP routes]
     Controllers[Controllers]
+    Worker[Bounded ingestion queue and workers]
     Services[PDF, chunking, hashing, embedding, vector search]
     Repositories[SQLAlchemy repositories]
     DB[(PostgreSQL + pgvector)]
@@ -23,6 +24,8 @@ flowchart TD
     Compose --> App
     User --> Routes
     Routes --> Controllers
+    Routes --> Worker
+    Worker --> Controllers
     Controllers --> Services
     Services --> Repositories
     Repositories --> DB
@@ -34,7 +37,8 @@ The application uses a layered flow:
 ```text
 HTTP request
   -> route validation and dependency injection
-  -> controller orchestration
+  -> ingestion job queue (for PDF ingestion)
+  -> controller orchestration (worker)
   -> domain/service processing
   -> repository database operation
   -> response schema
@@ -83,6 +87,7 @@ brightskies/
 │   │   ├── ingest_controller.py   # Ingestion orchestration logic
 │   │   └── search_controller.py   # Search orchestration logic
 │   ├── services/
+    │   │   ├── ingestion_worker.py # Bounded background ingestion queue
 │   │   ├── pdf_extractor.py       # PDF text extraction (PyMuPDF)
 │   │   ├── chunker.py             # Text chunking (langchain splitters)
 │   │   ├── hashing.py             # SHA-256 deduplication
@@ -173,7 +178,8 @@ APP_VERSION=1.0.0                  # Application version
 EMBEDDING_BACKEND=LOCAL            # Embedding provider (only LOCAL is supported)
 EMBEDDING_MODEL_ID=BAAI/bge-small-en-v1.5  # FastEmbed model
 EMBEDDING_MODEL_SIZE=384           # Embedding vector dimensions
-EMBEDDING_CONCURRENCY=2            # Max parallel embedding batches
+INGESTION_WORKERS=1                # Background ingestion workers per process
+INGESTION_QUEUE_SIZE=100            # Maximum queued files per process
 
 CHUNK_SIZE=1000                    # Max characters per text chunk
 CHUNK_OVERLAP=50                  # Overlap between adjacent chunks
@@ -211,6 +217,18 @@ This will:
 3. Download and cache the `BAAI/bge-small-en-v1.5` embedding model on first startup (~30MB).
 4. Run Alembic database migrations to create the schema.
 5. Start the FastAPI server on `http://localhost:8000`.
+
+PDF ingestion is handled by a bounded in-process queue. The API returns after
+the files are queued, while background workers extract, embed, and persist each
+file. Set `INGESTION_WORKERS=1` for large local embedding models unless memory
+and inference benchmarks justify a higher value.
+
+The queue is local to one application process. With multiple replicas or
+server workers, each process has its own queue and model instance, so total
+embedding concurrency is approximately `replicas × processes × INGESTION_WORKERS`.
+Queued files are held in memory and are lost if the process stops before they
+are processed; use a durable broker such as Redis, RabbitMQ, or Azure Service
+Bus for multi-replica production workloads.
 
 The script polls `http://localhost:8000/docs` and exits once the service is ready (or times out after ~5 minutes).
 
@@ -266,10 +284,14 @@ curl -X POST http://localhost:8000/api/v1/ingest/ \
 
 ```json
 {
-  "message": "Successfully ingested 2 PDF document(s).",
+  "message": "Queued 2 PDF document(s) for ingestion.",
   "files": ["doc1.pdf", "doc2.pdf"]
 }
 ```
+
+The response confirms that the files were accepted by the queue. Processing
+continues in the background; the `documents` table records `processing`,
+`completed`, or `failed` status for each file.
 
 ---
 
@@ -380,8 +402,8 @@ Full OpenAPI spec: [`swagger.yaml`](swagger.yaml)
 | Duplicate PDF          | Detected by SHA-256 hash; returns success with note  |
 | Image-only PDF         | `400` — "Could not extract any text from the file."  |
 | Invalid directory path | `400` — path traversal protection enforced           |
-| Embedding failure      | `500` — logged; partial results for multi-file batch |
-| Concurrent uploads     | Handled with asyncio semaphore (configurable)        |
+| Embedding failure      | Logged; document status is set to `failed`            |
+| Concurrent uploads     | Handled by bounded background workers                |
 
 ---
 
@@ -402,7 +424,8 @@ All settings are driven by environment variables (see [`docker/.env.example`](do
 | `EMBEDDING_BACKEND`  | —        | `LOCAL`       | Embedding provider                   |
 | `EMBEDDING_MODEL_ID` | —        | `BAAI/bge-small-en-v1.5` | FastEmbed model for embeddings |
 | `EMBEDDING_MODEL_SIZE` | —      | `384`         | Embedding vector dimensions          |
-| `EMBEDDING_CONCURRENCY` | —     | `2`           | Max parallel embedding batches       |
+| `INGESTION_WORKERS`   | —        | `1`         | Background workers per application process |
+| `INGESTION_QUEUE_SIZE`| —        | `100`       | Maximum queued files per application process |
 | `CHUNK_SIZE`         | —        | `1000`        | Max characters per text chunk        |
 | `CHUNK_OVERLAP`      | —        | `50`         | Overlap between adjacent chunks      |
 | `TOP_K`              | —        | `5`           | Number of search results to return   |
