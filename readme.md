@@ -106,6 +106,7 @@ brightskies/
 │           │   ├── documents.py
 │           │   └── chunk.py
 │           ├── alembic.ini
+|           ├── alembic.ini.example
 │           └── alembic/            # Migration scripts
 ├── evaluation/
 │   ├── ragas_benchmark.py     # Performance & retrieval quality benchmark
@@ -191,7 +192,7 @@ MIN_RELEVANCE_SCORE=0.55           # Minimum semantic similarity threshold
 ALLOWED_DIRECTORY=/data            # Base directory for directory ingestion
 ```
 
-> **⚠️ Important:** `POSTGRES_DB` and `POSTGRES_DATABASE` **must have the same value**. `POSTGRES_DB` is used by the PostgreSQL container to create the database, while `POSTGRES_DATABASE` is used by the app to connect to it.
+> **Important:** `POSTGRES_DB` and `POSTGRES_DATABASE` **must have the same value**. `POSTGRES_DB` is used by the PostgreSQL container to create the database, while `POSTGRES_DATABASE` is used by the app to connect to it.
 
 #### B) Local Development Environment (Optional)
 
@@ -201,7 +202,18 @@ Only needed if you want to run the FastAPI app directly on your host (outside Do
 cp src/.env.example src/.env
 # Edit src/.env with your local PostgreSQL connection details
 ```
+---
+### Step 2.5: Configure Alembic for Migrations
 
+Before starting the stack, you must configure Alembic so it can connect to your database to run schema migrations.
+
+1. Navigate to the `src/models/db_scheme/pgvector` directory.
+2. Copy the `alembic.ini` configuration file (or create a copy of the template as `alembic.ini`).
+3. Open the new `alembic.ini` file and update the `sqlalchemy.url` line to match your database credentials:
+
+```ini
+sqlalchemy.url = postgresql://{username}:{password}@{host}:{port}/{db_name}
+```
 ---
 
 ### Step 3: Start the Stack
