@@ -296,7 +296,7 @@ curl -X POST http://localhost:8000/api/v1/ingest/ \
 
 ```json
 {
-  "message": "Queued 2 PDF document(s) for ingestion.",
+  "message": "Successfully queued PDF document for ingestion.",
   "files": ["doc1.pdf", "doc2.pdf"]
 }
 ```
@@ -344,14 +344,6 @@ pip install pytest requests
 # Run the full test suite
 pytest test/suite.py -v
 ```
-
-The test suite (13 tests) covers:
-- Service health checks
-- Single and multiple PDF ingestion
-- Duplicate detection
-- Semantic search queries
-- Edge cases (invalid files, empty queries, concurrent uploads)
-
 ---
 
 ### Step 8: Run Benchmarks (Optional)
@@ -404,112 +396,3 @@ docker compose -f docker/Docker-compose.yml down -v
 Full OpenAPI spec: [`swagger.yaml`](swagger.yaml)
 
 ---
-
-## Edge Case Handling
-
-| Scenario               | Behaviour                                            |
-|------------------------|------------------------------------------------------|
-| Non-PDF file uploaded  | `400` — "Only PDF files are accepted."               |
-| Empty / whitespace query | `400` — "Query cannot be empty."                   |
-| Duplicate PDF          | Detected by SHA-256 hash; returns success with note  |
-| Image-only PDF         | `400` — "Could not extract any text from the file."  |
-| Invalid directory path | `400` — path traversal protection enforced           |
-| Embedding failure      | Logged; document status is set to `failed`            |
-| Concurrent uploads     | Handled by bounded background workers                |
-
----
-
-## Configuration Reference
-
-All settings are driven by environment variables (see [`docker/.env.example`](docker/.env.example)):
-
-| Variable             | Required | Default       | Description                          |
-|----------------------|----------|---------------|--------------------------------------|
-| `POSTGRES_USER`      | ✅       | —             | PostgreSQL username                  |
-| `POSTGRES_PASSWORD`  | ✅       | —             | PostgreSQL password                  |
-| `POSTGRES_DB`        | ✅       | —             | Database name (Docker container)     |
-| `POSTGRES_HOST`      | —        | `postgres`    | PostgreSQL host                      |
-| `POSTGRES_PORT`      | —        | `5432`        | PostgreSQL port                      |
-| `POSTGRES_DATABASE`  | ✅       | —             | Database name (app connection)       |
-| `APP_NAME`           | —        | `BrightSkies` | Application display name             |
-| `APP_VERSION`        | —        | `1.0.0`       | Application version                  |
-| `EMBEDDING_BACKEND`  | —        | `LOCAL`       | Embedding provider                   |
-| `EMBEDDING_MODEL_ID` | —        | `BAAI/bge-small-en-v1.5` | FastEmbed model for embeddings |
-| `EMBEDDING_MODEL_SIZE` | —      | `384`         | Embedding vector dimensions          |
-| `INGESTION_WORKERS`   | —        | `1`         | Background workers per application process |
-| `INGESTION_QUEUE_SIZE`| —        | `100`       | Maximum queued files per application process |
-| `CHUNK_SIZE`         | —        | `1000`        | Max characters per text chunk        |
-| `CHUNK_OVERLAP`      | —        | `50`         | Overlap between adjacent chunks      |
-| `TOP_K`              | —        | `5`           | Number of search results to return   |
-| `HYBRID_RRF_K`       | —        | `60`          | Reciprocal Rank Fusion constant      |
-| `MIN_RELEVANCE_SCORE`| —        | `0.55`        | Minimum semantic similarity threshold|
-| `ALLOWED_DIRECTORY`  | —        | `/data`       | Base directory for directory ingestion |
-
----
-
-## Dependencies
-
-The application runs inside Docker and installs the following Python packages (see [`docker/requirements.txt`](docker/requirements.txt)):
-
-| Package | Purpose |
-|---------|---------|
-| `fastapi[standard]` | Web framework and API server |
-| `uvicorn[standard]` | ASGI server to run FastAPI |
-| `sqlalchemy[asyncio]` | Async ORM for database operations |
-| `asyncpg` | PostgreSQL async driver |
-| `alembic` | Database schema migrations |
-| `pgvector` | pgvector SQLAlchemy support |
-| `psycopg2-binary` | PostgreSQL adapter (used by Alembic) |
-| `PyMuPDF` | PDF text extraction |
-| `langchain-text-splitters` | Text chunking with RecursiveCharacterTextSplitter |
-| `fastembed` | Local embedding model inference (ONNX) |
-| `pydantic-settings` | Environment-driven configuration |
-| `python-multipart` | File upload parsing |
-| `ragas` | Retrieval evaluation metrics (optional) |
-| `requests` | HTTP client (for benchmarks and tests) |
-
----
-
-## Hybrid Search
-
-Search combines two PostgreSQL retrieval signals:
-
-- pgvector cosine-distance ranking for semantic similarity.
-- PostgreSQL English full-text ranking for exact terms and phrases.
-
-The two candidate rankings are combined with Reciprocal Rank Fusion. The
-`HYBRID_RRF_K` setting controls the fusion constant and defaults to `60`.
-Hybrid retrieval improves ranking, but it does not by itself prove that a
-question is in scope. A production policy should also apply a calibrated
-minimum relevance threshold and return an explicit no-relevant-document result
-when the evidence is weak.
-
----
-
-## Ragas And Performance Evaluation
-
-Request logs include the HTTP method, path, status, and `latency_ms`. For
-retrieval-quality evaluation and throughput measurements, install the optional
-evaluation dependencies (note: you must put your own sample data in `evaluation/sample.jsonl` based on the pdfs you have ingested and the expected results for those pdfs):
-
-```bash
-python evaluation/ragas_benchmark.py \
-  --dataset evaluation/sample.jsonl \
-  --concurrency 4 \
-  --output evaluation/report.json
-```
-
-The benchmark sends concurrent search requests and reports wall-clock
-throughput, minimum/mean/median/p95/maximum latency, each response, and Ragas
-context precision and context recall. It prints the report and writes it to
-`evaluation/report.json`.
-
-For performance-only measurements without installing Ragas metrics:
-
-```bash
-python evaluation/ragas_benchmark.py \
-  --dataset evaluation/sample.jsonl \
-  --concurrency 4 \
-  --skip-ragas
-```
-
