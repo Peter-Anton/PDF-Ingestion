@@ -136,8 +136,8 @@ This section walks you through setting up and running the entire system from scr
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <your-repo-url>
-cd brightskies
+git clone https://github.com/Peter-Anton/PDF-Ingestion.git
+cd PDF-Ingestion
 ```
 
 ---

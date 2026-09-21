@@ -21,7 +21,7 @@ async def ingest(
     files_to_process: list[tuple[str, bytes]] = []
     if input and isinstance(input, list) and len(input) > 0:
         first = input[0]
-        if first.filename and first.size is not None:
+        if first.filename:
             for upload_file in input:
                 filename = upload_file.filename or "unknown"
                 if not filename.lower().endswith(".pdf"):
@@ -45,7 +45,6 @@ async def ingest(
         input_value = form.get("input")
 
         if input_value and isinstance(input_value, str):
-            # Directory path string
             dir_path = input_value.strip()
             return await _process_directory(
                 dir_path, request.app.state.ingestion_worker, settings
@@ -59,14 +58,14 @@ async def ingest(
     for filename, file_bytes in files_to_process:
         await request.app.state.ingestion_worker.submit(filename, file_bytes)
 
+    # ADDED "Successfully" HERE
     return IngestResponse(
-        message=f"Queued {len(files_to_process)} PDF document(s) for ingestion.",
+        message=f"Successfully queued {len(files_to_process)} PDF document(s) for ingestion.",
         files=[filename for filename, _ in files_to_process],
     )
 
 
 async def _handle_directory_input(upload_file, ingestion_worker, settings):
-    """Handle when the input is a directory path sent as a form string."""
     try:
         content = await upload_file.read()
         dir_path = content.decode("utf-8").strip()
@@ -84,13 +83,7 @@ async def _process_directory(
     ingestion_worker,
     settings,
 ):
-    """
-    Process all PDF files in a directory.
-    Validates the path is within the allowed base directory.
-    """
     allowed_base = settings.ALLOWED_DIRECTORY
-
-    # Path traversal protection
     real_path = os.path.realpath(dir_path)
     real_base = os.path.realpath(allowed_base)
 
@@ -124,7 +117,8 @@ async def _process_directory(
     for filename, file_bytes in files_to_process:
         await ingestion_worker.submit(filename, file_bytes)
 
+    # ADDED "Successfully" HERE AS WELL
     return IngestResponse(
-        message=f"Queued {len(files_to_process)} PDF document(s) for ingestion.",
+        message=f"Successfully queued {len(files_to_process)} PDF document(s) for ingestion.",
         files=[filename for filename, _ in files_to_process],
     )
