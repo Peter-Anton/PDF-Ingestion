@@ -37,7 +37,7 @@ async def ingest(
                     content={"error": "Only PDF files are accepted."},
                 )
         else:
-            return await _handle_directory_input(
+            return await __handle_directory_input(
                 first, request.app.state.ingestion_worker, settings
             )
     else:
@@ -46,7 +46,7 @@ async def ingest(
 
         if input_value and isinstance(input_value, str):
             dir_path = input_value.strip()
-            return await _process_directory(
+            return await __process_directory(
                 dir_path, request.app.state.ingestion_worker, settings
             )
 
@@ -57,15 +57,13 @@ async def ingest(
 
     for filename, file_bytes in files_to_process:
         await request.app.state.ingestion_worker.submit(filename, file_bytes)
-
-    # ADDED "Successfully" HERE
     return IngestResponse(
         message=f"Successfully queued {len(files_to_process)} PDF document(s) for ingestion.",
         files=[filename for filename, _ in files_to_process],
     )
 
 
-async def _handle_directory_input(upload_file, ingestion_worker, settings):
+async def __handle_directory_input(upload_file, ingestion_worker, settings):
     try:
         content = await upload_file.read()
         dir_path = content.decode("utf-8").strip()
@@ -75,10 +73,10 @@ async def _handle_directory_input(upload_file, ingestion_worker, settings):
             content={"error": "Invalid directory path."},
         )
 
-    return await _process_directory(dir_path, ingestion_worker, settings)
+    return await __process_directory(dir_path, ingestion_worker, settings)
 
 
-async def _process_directory(
+async def __process_directory(
     dir_path: str,
     ingestion_worker,
     settings,
@@ -116,8 +114,6 @@ async def _process_directory(
 
     for filename, file_bytes in files_to_process:
         await ingestion_worker.submit(filename, file_bytes)
-
-    # ADDED "Successfully" HERE AS WELL
     return IngestResponse(
         message=f"Successfully queued {len(files_to_process)} PDF document(s) for ingestion.",
         files=[filename for filename, _ in files_to_process],

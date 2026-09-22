@@ -18,7 +18,6 @@ class Chunk(SQLAlchemyBase):
         index=True,
     )
     chunk_text = Column(String, nullable=False)
-    chunk_metadata = Column(JSONB, nullable=True)
     chunk_index = Column(Integer, nullable=False)
     embedding = Column(Vector(384), nullable=False)
     created_at = Column(

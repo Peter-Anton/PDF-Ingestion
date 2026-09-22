@@ -19,7 +19,7 @@ def extract_text(data: bytes) -> str:
             text = "\n".join(pages_text).strip()
             
     except Exception as e:
-        logger.warning(f"PyMuPDF in-memory parsing failed: {e}")
+        logger.warning(f"fitz in-memory parsing failed: {e}")
         raise PDFExtractionError("Could not extract text from the file.") from e
 
     if not text:
